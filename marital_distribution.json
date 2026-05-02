@@ -1,0 +1,310 @@
+{
+  "male": {
+    "全国": {
+      "20-24": {
+        "unmarried": 2669610,
+        "married": 127206,
+        "widowed": 392,
+        "divorced": 5746
+      },
+      "25-29": {
+        "unmarried": 2009359,
+        "married": 723766,
+        "widowed": 527,
+        "divorced": 23554
+      },
+      "30-34": {
+        "unmarried": 1440358,
+        "married": 1544254,
+        "widowed": 1097,
+        "divorced": 56010
+      },
+      "35-39": {
+        "unmarried": 1197991,
+        "married": 2167352,
+        "widowed": 2997,
+        "divorced": 99709
+      },
+      "40-44": {
+        "unmarried": 1154540,
+        "married": 2654875,
+        "widowed": 6926,
+        "divorced": 155184
+      },
+      "45-49": {
+        "unmarried": 1254286,
+        "married": 3113037,
+        "widowed": 15861,
+        "divorced": 236563
+      }
+    },
+    "東京都内": {
+      "20-24": {
+        "unmarried": 324118,
+        "married": 8897,
+        "widowed": 37,
+        "divorced": 264
+      },
+      "25-29": {
+        "unmarried": 270472,
+        "married": 77957,
+        "widowed": 33,
+        "divorced": 1369
+      },
+      "30-34": {
+        "unmarried": 184275,
+        "married": 187919,
+        "widowed": 96,
+        "divorced": 4236
+      },
+      "35-39": {
+        "unmarried": 144695,
+        "married": 270477,
+        "widowed": 246,
+        "divorced": 7658
+      },
+      "40-44": {
+        "unmarried": 131202,
+        "married": 317307,
+        "widowed": 514,
+        "divorced": 11368
+      },
+      "45-49": {
+        "unmarried": 142787,
+        "married": 353956,
+        "widowed": 1316,
+        "divorced": 17479
+      }
+    },
+    "首都圏": {
+      "20-24": {
+        "unmarried": 859820,
+        "married": 29031,
+        "widowed": 119,
+        "divorced": 1040
+      },
+      "25-29": {
+        "unmarried": 666159,
+        "married": 207337,
+        "widowed": 122,
+        "divorced": 4699
+      },
+      "30-34": {
+        "unmarried": 462020,
+        "married": 472818,
+        "widowed": 273,
+        "divorced": 12522
+      },
+      "35-39": {
+        "unmarried": 377944,
+        "married": 676969,
+        "widowed": 761,
+        "divorced": 22547
+      },
+      "40-44": {
+        "unmarried": 360710,
+        "married": 821595,
+        "widowed": 1751,
+        "divorced": 34842
+      },
+      "45-49": {
+        "unmarried": 406776,
+        "married": 960540,
+        "widowed": 4273,
+        "divorced": 56220
+      }
+    },
+    "関西圏": {
+      "20-24": {
+        "unmarried": 372077,
+        "married": 17213,
+        "widowed": 41,
+        "divorced": 677
+      },
+      "25-29": {
+        "unmarried": 251633,
+        "married": 96146,
+        "widowed": 53,
+        "divorced": 2655
+      },
+      "30-34": {
+        "unmarried": 172416,
+        "married": 202745,
+        "widowed": 112,
+        "divorced": 6210
+      },
+      "35-39": {
+        "unmarried": 140420,
+        "married": 274998,
+        "widowed": 328,
+        "divorced": 10610
+      },
+      "40-44": {
+        "unmarried": 137684,
+        "married": 338827,
+        "widowed": 784,
+        "divorced": 17350
+      },
+      "45-49": {
+        "unmarried": 158439,
+        "married": 421241,
+        "widowed": 1899,
+        "divorced": 28630
+      }
+    }
+  },
+  "female": {
+    "全国": {
+      "20-24": {
+        "unmarried": 2537761,
+        "married": 195541,
+        "widowed": 874,
+        "divorced": 14123
+      },
+      "25-29": {
+        "unmarried": 1720868,
+        "married": 978633,
+        "widowed": 1335,
+        "divorced": 55727
+      },
+      "30-34": {
+        "unmarried": 1070318,
+        "married": 1842521,
+        "widowed": 3157,
+        "divorced": 120371
+      },
+      "35-39": {
+        "unmarried": 822942,
+        "married": 2447690,
+        "widowed": 8218,
+        "divorced": 202379
+      },
+      "40-44": {
+        "unmarried": 769440,
+        "married": 2880530,
+        "widowed": 19259,
+        "divorced": 298483
+      },
+      "45-49": {
+        "unmarried": 813608,
+        "married": 3331082,
+        "widowed": 44978,
+        "divorced": 441243
+      }
+    },
+    "東京都内": {
+      "20-24": {
+        "unmarried": 329639,
+        "married": 15694,
+        "widowed": 74,
+        "divorced": 606
+      },
+      "25-29": {
+        "unmarried": 262954,
+        "married": 113241,
+        "widowed": 83,
+        "divorced": 3145
+      },
+      "30-34": {
+        "unmarried": 160011,
+        "married": 230560,
+        "widowed": 210,
+        "divorced": 8362
+      },
+      "35-39": {
+        "unmarried": 115434,
+        "married": 303074,
+        "widowed": 564,
+        "divorced": 14791
+      },
+      "40-44": {
+        "unmarried": 103019,
+        "married": 341869,
+        "widowed": 1455,
+        "divorced": 22407
+      },
+      "45-49": {
+        "unmarried": 111130,
+        "married": 378767,
+        "widowed": 3618,
+        "divorced": 35779
+      }
+    },
+    "首都圏": {
+      "20-24": {
+        "unmarried": 836039,
+        "married": 48440,
+        "widowed": 215,
+        "divorced": 2524
+      },
+      "25-29": {
+        "unmarried": 602065,
+        "married": 292760,
+        "widowed": 276,
+        "divorced": 10961
+      },
+      "30-34": {
+        "unmarried": 358160,
+        "married": 573858,
+        "widowed": 666,
+        "divorced": 25674
+      },
+      "35-39": {
+        "unmarried": 265103,
+        "married": 764818,
+        "widowed": 1816,
+        "divorced": 44156
+      },
+      "40-44": {
+        "unmarried": 241621,
+        "married": 893010,
+        "widowed": 4482,
+        "divorced": 66834
+      },
+      "45-49": {
+        "unmarried": 263017,
+        "married": 1035717,
+        "widowed": 11382,
+        "divorced": 106091
+      }
+    },
+    "関西圏": {
+      "20-24": {
+        "unmarried": 374568,
+        "married": 26365,
+        "widowed": 139,
+        "divorced": 1591
+      },
+      "25-29": {
+        "unmarried": 240566,
+        "married": 128721,
+        "widowed": 181,
+        "divorced": 6474
+      },
+      "30-34": {
+        "unmarried": 147647,
+        "married": 240343,
+        "widowed": 364,
+        "divorced": 14296
+      },
+      "35-39": {
+        "unmarried": 114512,
+        "married": 314253,
+        "widowed": 915,
+        "divorced": 23415
+      },
+      "40-44": {
+        "unmarried": 111315,
+        "married": 376053,
+        "widowed": 2295,
+        "divorced": 36809
+      },
+      "45-49": {
+        "unmarried": 122878,
+        "married": 458439,
+        "widowed": 5843,
+        "divorced": 60002
+      }
+    }
+  }
+}

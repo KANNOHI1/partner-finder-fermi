@@ -1,0 +1,2422 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>婚活フェルミ推計</title>
+  <style>
+    :root {
+      --bg: #FFF8F0;
+      --surface: rgba(255, 255, 255, 0.78);
+      --surface-strong: #ffffff;
+      --text: #3f2e35;
+      --muted: #7a6269;
+      --accent: #E05C8A;
+      --accent-soft: rgba(224, 92, 138, 0.12);
+      --line: rgba(118, 82, 96, 0.14);
+      --shadow: 0 24px 60px rgba(167, 112, 132, 0.16);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(224, 92, 138, 0.20), transparent 34%),
+        radial-gradient(circle at 82% 16%, rgba(255, 197, 82, 0.18), transparent 22%),
+        linear-gradient(180deg, #fffdf8 0%, var(--bg) 32%, #fff5ea 100%);
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto;
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(12px);
+      opacity: 0.75;
+    }
+
+    body::before {
+      width: 280px;
+      height: 280px;
+      left: -90px;
+      top: 28%;
+      background: radial-gradient(circle, rgba(224, 92, 138, 0.18), transparent 68%);
+    }
+
+    body::after {
+      width: 360px;
+      height: 360px;
+      right: -120px;
+      bottom: -40px;
+      background: radial-gradient(circle, rgba(255, 200, 123, 0.20), transparent 68%);
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(680px, calc(100% - 24px));
+      margin: 0 auto;
+      padding: 12px 0 32px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar {
+      padding: 10px 4px 0;
+      text-align: center;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--accent);
+    }
+
+    .topbar .sub {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.5;
+    }
+
+    .sticky-result {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      margin: 0 -8px 4px;
+      padding: 14px 18px;
+      background: #fff8f0;
+      border-bottom: 1px solid var(--line);
+      border-radius: 0 0 24px 24px;
+      box-shadow: 0 12px 24px rgba(167, 112, 132, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .sticky-count {
+      display: flex;
+      align-items: baseline;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .sticky-count strong {
+      font-size: clamp(1.5rem, 5.5vw, 1.9rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .sticky-count .unit {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-left: 2px;
+    }
+
+    .sticky-meta {
+      text-align: right;
+      line-height: 1.35;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .sticky-meta .rate {
+      font-size: clamp(1.2rem, 4.5vw, 1.5rem);
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .sticky-meta .rarity {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .controls {
+      padding: 22px;
+    }
+
+    .section-title {
+      margin: 0 0 18px;
+      font-size: 1.2rem;
+      letter-spacing: -0.03em;
+    }
+
+    .field-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+    }
+
+    .field label,
+    .field legend {
+      font-weight: 700;
+      font-size: 0.96rem;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    fieldset {
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      padding: 6px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid var(--line);
+    }
+
+    .segmented input {
+      display: none;
+    }
+
+    .segmented label {
+      padding: 12px 14px;
+      text-align: center;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--muted);
+      transition: 180ms ease;
+    }
+
+    .segmented input:checked + label {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(224, 92, 138, 0.22);
+    }
+
+    .duo {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .checkbox-row label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .duo-with-sep {
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+    }
+
+    .duo-with-sep select:first-of-type {
+      order: 1;
+    }
+
+    .age-sep {
+      order: 2;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .duo-with-sep select:last-of-type {
+      order: 3;
+    }
+
+    select {
+      width: 100%;
+      appearance: none;
+      padding: 12px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.84)),
+        linear-gradient(135deg, rgba(224, 92, 138, 0.08), rgba(255, 255, 255, 0));
+      color: var(--text);
+      font: inherit;
+      outline: none;
+      transition: border-color 160ms ease, transform 160ms ease;
+    }
+
+    select:focus {
+      border-color: rgba(224, 92, 138, 0.55);
+      transform: translateY(-1px);
+    }
+
+    select:disabled {
+      opacity: 0.58;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .target-banner {
+      margin: 0 0 22px;
+      padding: 16px 18px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(135deg, rgba(224, 92, 138, 0.13), rgba(255, 255, 255, 0.88));
+      border: 1px solid rgba(224, 92, 138, 0.18);
+    }
+
+    .controls .section-title {
+      margin-top: 0;
+    }
+
+    .target-banner strong {
+      color: var(--accent);
+      font-size: 1.05rem;
+    }
+
+    .panel-section {
+      padding: 22px;
+    }
+
+    .premise-body .footnote + .footnote {
+      margin-top: 10px;
+    }
+
+    .premise-body footer {
+      margin-top: 10px;
+    }
+
+    .comment-card {
+      padding: 22px 24px;
+      border-radius: var(--radius-xl);
+      background:
+        linear-gradient(130deg, rgba(224, 92, 138, 0.95), rgba(222, 118, 158, 0.9)),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02));
+      color: #fff8fb;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .comment-card span {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.22);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .comment-card::after {
+      content: "";
+      position: absolute;
+      right: -40px;
+      bottom: -52px;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.20);
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.18), transparent 68%);
+    }
+
+    .comment-card p {
+      position: relative;
+      z-index: 1;
+      margin: 6px 0 0;
+      line-height: 1.75;
+    }
+
+    #encounterFeel {
+      white-space: pre-line;
+    }
+
+    .breakdown {
+      display: grid;
+      gap: 10px;
+    }
+
+    .breakdown-item {
+      display: grid;
+      grid-template-columns: 1.4fr 0.8fr 0.8fr;
+      grid-template-rows: auto auto;
+      gap: 6px 12px;
+      align-items: center;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid var(--line);
+    }
+
+    .breakdown-item strong,
+    .breakdown-item span,
+    .breakdown-item small {
+      display: block;
+    }
+
+    .breakdown-item span,
+    .breakdown-item small {
+      color: var(--muted);
+    }
+
+    .breakdown-item .breakdown-note {
+      grid-column: 1 / -1;
+      margin: 4px 0 0;
+      padding-top: 8px;
+      border-top: 1px dashed var(--line);
+      font-size: 0.74rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .value-block {
+      text-align: right;
+    }
+
+    .footnote {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.7;
+    }
+
+    .footnotes {
+      display: grid;
+      gap: 8px;
+    }
+
+    .age-details {
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.82);
+      overflow: hidden;
+    }
+
+    .age-details summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 16px 18px;
+      font-weight: 700;
+    }
+
+    .age-details summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .age-details-body {
+      padding: 0 18px 18px;
+      overflow-x: auto;
+    }
+
+    .age-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+    }
+
+    .age-table th,
+    .age-table td {
+      padding: 10px 8px;
+      border-top: 1px solid var(--line);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .age-table th:first-child,
+    .age-table td:first-child {
+      text-align: left;
+    }
+
+    footer {
+      display: block;
+      margin: 12px 0 0;
+      padding: 0;
+      background: none;
+      border: 0;
+      box-shadow: none;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 720px) {
+      .shell {
+        width: min(100% - 16px, 100%);
+        padding-top: 8px;
+        gap: 12px;
+      }
+
+      .controls,
+      .panel-section {
+        padding: 18px;
+      }
+
+      .breakdown-item {
+        grid-template-columns: 1fr;
+      }
+
+      .duo-with-sep {
+        grid-template-columns: 1fr;
+      }
+
+      .age-sep {
+        display: none;
+      }
+
+      .value-block {
+        text-align: left;
+      }
+
+      .topbar h1 {
+        font-size: 1.35rem;
+      }
+
+      .sticky-result {
+        margin: 0 -8px;
+        padding: 10px 14px;
+      }
+    }
+
+    @supports (-webkit-touch-callout: none) {
+      .sticky-result {
+        background: rgba(255, 248, 240, 0.98);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <h1>婚活フェル美</h1>
+      <p class="sub">フェルミ推定で「条件に合う候補が日本に何人いるか」をざっくり可視化</p>
+    </header>
+
+    <section class="sticky-result" aria-label="推定結果サマリ">
+      <div class="sticky-count">
+        <strong id="countValue">-</strong>
+        <span class="unit">人</span>
+      </div>
+      <div class="sticky-meta">
+        <strong class="rate" id="overallRateValue">-</strong>
+        <span class="rarity" id="rarityComment"></span>
+      </div>
+    </section>
+
+    <span hidden id="rangeBadge"></span>
+    <span hidden id="summaryText"></span>
+    <span hidden id="ageBandRateValue"></span>
+
+    <form class="panel controls" id="controls">
+      <div class="target-banner">
+        推計対象: <strong id="targetLabel">男性の候補母集団</strong><br>
+        <span class="hint" id="targetSubtext">女性として条件を設定中です。</span>
+      </div>
+
+      <h2 class="section-title">条件を選ぶ</h2>
+
+      <div class="field-grid">
+          <fieldset class="field">
+            <div class="field-header">
+              <legend>あなたの性別</legend>
+              <span class="hint">探す相手は自動で逆性別</span>
+            </div>
+            <div class="segmented">
+              <input type="radio" name="selfGender" id="genderFemale" value="female" checked>
+              <label for="genderFemale">女性</label>
+              <input type="radio" name="selfGender" id="genderMale" value="male">
+              <label for="genderMale">男性</label>
+            </div>
+          </fieldset>
+
+          <div class="field">
+            <div class="field-header">
+              <label for="ageMin">年齢範囲</label>
+              <span class="hint">5歳刻みの対象人口を合算</span>
+            </div>
+            <div class="duo duo-with-sep">
+              <span class="age-sep">〜</span>
+              <select id="ageMin" aria-label="最低年齢"></select>
+              <select id="ageMax" aria-label="最高年齢"></select>
+            </div>
+          </div>
+
+          <div class="field" id="maritalField">
+            <div class="field-header">
+              <label>婚姻状態</label>
+              <span class="hint">未婚・離別・死別を任意組合せ</span>
+            </div>
+            <div class="checkbox-row">
+              <label><input type="checkbox" id="m_unmarried" checked> 未婚（経験なし）</label>
+              <label><input type="checkbox" id="m_divorced"> 離別経験あり</label>
+              <label><input type="checkbox" id="m_widowed"> 死別経験あり</label>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-header">
+              <label for="income">年収</label>
+              <span class="hint">最低ラインで指定</span>
+            </div>
+            <select id="income"></select>
+          </div>
+
+          <div class="field" id="assetField">
+            <div class="field-header">
+              <label for="asset">純金融資産</label>
+              <span class="hint">年収600万円以上で有効</span>
+            </div>
+            <select id="asset" disabled></select>
+            <small class="hint">※年収600万円以上を選択時に有効。住宅ローン等の負債を引いた純額。単身世帯65歳未満ベース</small>
+          </div>
+
+          <div class="field">
+            <div class="field-header">
+              <label for="education">学歴</label>
+              <span class="hint">条件なしも選択可</span>
+            </div>
+            <select id="education">
+              <option value="none">こだわらない</option>
+              <option value="university">大卒以上</option>
+              <option value="graduate">院卒以上</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <div class="field-header">
+              <label for="residence">居住地</label>
+              <span class="hint">国勢調査の対象地域で絞り込み</span>
+            </div>
+            <select id="residence">
+              <option value="nationwide">全国</option>
+              <option value="tokyo">東京</option>
+              <option value="metro">首都圏</option>
+              <option value="kansai">関西圏</option>
+            </select>
+          </div>
+
+          <div class="field" id="nationalityField">
+            <div class="field-header">
+              <label for="nationality">国籍</label>
+              <span class="hint">居住地と年齢で割合変動</span>
+            </div>
+            <select id="nationality">
+              <option value="any">こだわらない</option>
+              <option value="japanese">日本国籍のみ</option>
+              <option value="foreign">外国籍のみ</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <div class="field-header">
+              <label for="height">身長</label>
+              <span class="hint">相手の性別に応じて切替</span>
+            </div>
+            <select id="height"></select>
+          </div>
+
+          <div class="field">
+            <div class="field-header">
+              <label for="smoking">喫煙</label>
+              <span class="hint">非喫煙者指定が可能</span>
+            </div>
+            <select id="smoking">
+              <option value="any">こだわらない</option>
+              <option value="nonsmoker">非喫煙者</option>
+            </select>
+          </div>
+
+          <div class="field" id="baldnessField" hidden>
+            <div class="field-header">
+              <label for="baldness">薄毛</label>
+              <span class="hint">男性を探すときのみ表示</span>
+            </div>
+            <select id="baldness">
+              <option value="any">こだわらない</option>
+              <option value="nonbald">薄毛でない</option>
+            </select>
+          </div>
+        </div>
+      </form>
+
+      <section class="panel panel-section">
+        <h2 class="section-title">条件ごとの内訳</h2>
+        <div class="breakdown" id="breakdown"></div>
+      </section>
+
+      <section class="panel panel-section">
+        <details class="age-details">
+          <summary>年齢別詳細</summary>
+          <div class="age-details-body" id="ageDetails"></div>
+        </details>
+      </section>
+
+      <section class="comment-card">
+        <span>出会い感覚</span>
+        <p id="encounterFeel"></p>
+      </section>
+
+      <section class="panel panel-section">
+        <details class="age-details">
+          <summary>推計の前提とデータソース</summary>
+          <div class="age-details-body premise-body">
+            <p class="footnote">
+              年齢以外の条件は独立とみなして掛け合わせています。実際には年収・学歴・居住地・身長・喫煙には相関があるため、表示値はあくまで概算です。
+            </p>
+            <p class="footnote" id="dataLimitations"></p>
+            <footer></footer>
+          </div>
+        </details>
+      </section>
+  </main>
+
+  <script>
+    const AGE_BUCKETS = [
+      { key: 20, label: "20-24歳" },
+      { key: 25, label: "25-29歳" },
+      { key: 30, label: "30-34歳" },
+      { key: 35, label: "35-39歳" },
+      { key: 40, label: "40-44歳" },
+      { key: 45, label: "45-49歳" }
+    ];
+
+    const INCOME_OPTIONS = [
+      { value: "0", label: "こだわらない", startIndex: 0 },
+      { value: "200", label: "200万円以上", startIndex: 2 },
+      { value: "300", label: "300万円以上", startIndex: 3 },
+      { value: "400", label: "400万円以上", startIndex: 4 },
+      { value: "500", label: "500万円以上", startIndex: 5 },
+      { value: "600", label: "600万円以上", startIndex: 6 },
+      { value: "700", label: "700万円以上", startIndex: 7 },
+      { value: "800", label: "800万円以上", startIndex: 8 },
+      { value: "1000", label: "1000万円以上", startIndex: 9 }
+    ];
+
+    // 出典: 総務省 令和2年(2020年)国勢調査 配偶関係×年齢×男女×都道府県（e-stat API getStatsData/0003445236）
+    const MARITAL_DISTRIBUTION = {
+      "male": {
+        "全国": {
+          "20-24": {
+            "unmarried": 2669610,
+            "married": 127206,
+            "widowed": 392,
+            "divorced": 5746
+          },
+          "25-29": {
+            "unmarried": 2009359,
+            "married": 723766,
+            "widowed": 527,
+            "divorced": 23554
+          },
+          "30-34": {
+            "unmarried": 1440358,
+            "married": 1544254,
+            "widowed": 1097,
+            "divorced": 56010
+          },
+          "35-39": {
+            "unmarried": 1197991,
+            "married": 2167352,
+            "widowed": 2997,
+            "divorced": 99709
+          },
+          "40-44": {
+            "unmarried": 1154540,
+            "married": 2654875,
+            "widowed": 6926,
+            "divorced": 155184
+          },
+          "45-49": {
+            "unmarried": 1254286,
+            "married": 3113037,
+            "widowed": 15861,
+            "divorced": 236563
+          }
+        },
+        "東京都内": {
+          "20-24": {
+            "unmarried": 324118,
+            "married": 8897,
+            "widowed": 37,
+            "divorced": 264
+          },
+          "25-29": {
+            "unmarried": 270472,
+            "married": 77957,
+            "widowed": 33,
+            "divorced": 1369
+          },
+          "30-34": {
+            "unmarried": 184275,
+            "married": 187919,
+            "widowed": 96,
+            "divorced": 4236
+          },
+          "35-39": {
+            "unmarried": 144695,
+            "married": 270477,
+            "widowed": 246,
+            "divorced": 7658
+          },
+          "40-44": {
+            "unmarried": 131202,
+            "married": 317307,
+            "widowed": 514,
+            "divorced": 11368
+          },
+          "45-49": {
+            "unmarried": 142787,
+            "married": 353956,
+            "widowed": 1316,
+            "divorced": 17479
+          }
+        },
+        "首都圏": {
+          "20-24": {
+            "unmarried": 859820,
+            "married": 29031,
+            "widowed": 119,
+            "divorced": 1040
+          },
+          "25-29": {
+            "unmarried": 666159,
+            "married": 207337,
+            "widowed": 122,
+            "divorced": 4699
+          },
+          "30-34": {
+            "unmarried": 462020,
+            "married": 472818,
+            "widowed": 273,
+            "divorced": 12522
+          },
+          "35-39": {
+            "unmarried": 377944,
+            "married": 676969,
+            "widowed": 761,
+            "divorced": 22547
+          },
+          "40-44": {
+            "unmarried": 360710,
+            "married": 821595,
+            "widowed": 1751,
+            "divorced": 34842
+          },
+          "45-49": {
+            "unmarried": 406776,
+            "married": 960540,
+            "widowed": 4273,
+            "divorced": 56220
+          }
+        },
+        "関西圏": {
+          "20-24": {
+            "unmarried": 372077,
+            "married": 17213,
+            "widowed": 41,
+            "divorced": 677
+          },
+          "25-29": {
+            "unmarried": 251633,
+            "married": 96146,
+            "widowed": 53,
+            "divorced": 2655
+          },
+          "30-34": {
+            "unmarried": 172416,
+            "married": 202745,
+            "widowed": 112,
+            "divorced": 6210
+          },
+          "35-39": {
+            "unmarried": 140420,
+            "married": 274998,
+            "widowed": 328,
+            "divorced": 10610
+          },
+          "40-44": {
+            "unmarried": 137684,
+            "married": 338827,
+            "widowed": 784,
+            "divorced": 17350
+          },
+          "45-49": {
+            "unmarried": 158439,
+            "married": 421241,
+            "widowed": 1899,
+            "divorced": 28630
+          }
+        }
+      },
+      "female": {
+        "全国": {
+          "20-24": {
+            "unmarried": 2537761,
+            "married": 195541,
+            "widowed": 874,
+            "divorced": 14123
+          },
+          "25-29": {
+            "unmarried": 1720868,
+            "married": 978633,
+            "widowed": 1335,
+            "divorced": 55727
+          },
+          "30-34": {
+            "unmarried": 1070318,
+            "married": 1842521,
+            "widowed": 3157,
+            "divorced": 120371
+          },
+          "35-39": {
+            "unmarried": 822942,
+            "married": 2447690,
+            "widowed": 8218,
+            "divorced": 202379
+          },
+          "40-44": {
+            "unmarried": 769440,
+            "married": 2880530,
+            "widowed": 19259,
+            "divorced": 298483
+          },
+          "45-49": {
+            "unmarried": 813608,
+            "married": 3331082,
+            "widowed": 44978,
+            "divorced": 441243
+          }
+        },
+        "東京都内": {
+          "20-24": {
+            "unmarried": 329639,
+            "married": 15694,
+            "widowed": 74,
+            "divorced": 606
+          },
+          "25-29": {
+            "unmarried": 262954,
+            "married": 113241,
+            "widowed": 83,
+            "divorced": 3145
+          },
+          "30-34": {
+            "unmarried": 160011,
+            "married": 230560,
+            "widowed": 210,
+            "divorced": 8362
+          },
+          "35-39": {
+            "unmarried": 115434,
+            "married": 303074,
+            "widowed": 564,
+            "divorced": 14791
+          },
+          "40-44": {
+            "unmarried": 103019,
+            "married": 341869,
+            "widowed": 1455,
+            "divorced": 22407
+          },
+          "45-49": {
+            "unmarried": 111130,
+            "married": 378767,
+            "widowed": 3618,
+            "divorced": 35779
+          }
+        },
+        "首都圏": {
+          "20-24": {
+            "unmarried": 836039,
+            "married": 48440,
+            "widowed": 215,
+            "divorced": 2524
+          },
+          "25-29": {
+            "unmarried": 602065,
+            "married": 292760,
+            "widowed": 276,
+            "divorced": 10961
+          },
+          "30-34": {
+            "unmarried": 358160,
+            "married": 573858,
+            "widowed": 666,
+            "divorced": 25674
+          },
+          "35-39": {
+            "unmarried": 265103,
+            "married": 764818,
+            "widowed": 1816,
+            "divorced": 44156
+          },
+          "40-44": {
+            "unmarried": 241621,
+            "married": 893010,
+            "widowed": 4482,
+            "divorced": 66834
+          },
+          "45-49": {
+            "unmarried": 263017,
+            "married": 1035717,
+            "widowed": 11382,
+            "divorced": 106091
+          }
+        },
+        "関西圏": {
+          "20-24": {
+            "unmarried": 374568,
+            "married": 26365,
+            "widowed": 139,
+            "divorced": 1591
+          },
+          "25-29": {
+            "unmarried": 240566,
+            "married": 128721,
+            "widowed": 181,
+            "divorced": 6474
+          },
+          "30-34": {
+            "unmarried": 147647,
+            "married": 240343,
+            "widowed": 364,
+            "divorced": 14296
+          },
+          "35-39": {
+            "unmarried": 114512,
+            "married": 314253,
+            "widowed": 915,
+            "divorced": 23415
+          },
+          "40-44": {
+            "unmarried": 111315,
+            "married": 376053,
+            "widowed": 2295,
+            "divorced": 36809
+          },
+          "45-49": {
+            "unmarried": 122878,
+            "married": 458439,
+            "widowed": 5843,
+            "divorced": 60002
+          }
+        }
+      }
+    };
+
+    // 出典: 総務省 令和2年(2020年)国勢調査 国籍別人口（同表より日本人/総数比から算出）
+    const NATIONALITY_RATES = {
+      "全国": {
+        "20-24": {
+          "japanese": 0.9533,
+          "foreign": 0.0467
+        },
+        "25-29": {
+          "japanese": 0.9485,
+          "foreign": 0.0515
+        },
+        "30-34": {
+          "japanese": 0.9577,
+          "foreign": 0.0423
+        },
+        "35-39": {
+          "japanese": 0.9688,
+          "foreign": 0.0312
+        },
+        "40-44": {
+          "japanese": 0.9774,
+          "foreign": 0.0226
+        },
+        "45-49": {
+          "japanese": 0.9829,
+          "foreign": 0.0171
+        }
+      },
+      "東京都内": {
+        "20-24": {
+          "japanese": 0.9469,
+          "foreign": 0.0531
+        },
+        "25-29": {
+          "japanese": 0.9356,
+          "foreign": 0.0644
+        },
+        "30-34": {
+          "japanese": 0.9357,
+          "foreign": 0.0643
+        },
+        "35-39": {
+          "japanese": 0.948,
+          "foreign": 0.052
+        },
+        "40-44": {
+          "japanese": 0.9613,
+          "foreign": 0.0387
+        },
+        "45-49": {
+          "japanese": 0.9715,
+          "foreign": 0.0285
+        }
+      },
+      "首都圏": {
+        "20-24": {
+          "japanese": 0.9566,
+          "foreign": 0.0434
+        },
+        "25-29": {
+          "japanese": 0.9434,
+          "foreign": 0.0566
+        },
+        "30-34": {
+          "japanese": 0.9443,
+          "foreign": 0.0557
+        },
+        "35-39": {
+          "japanese": 0.9565,
+          "foreign": 0.0435
+        },
+        "40-44": {
+          "japanese": 0.9691,
+          "foreign": 0.0309
+        },
+        "45-49": {
+          "japanese": 0.9775,
+          "foreign": 0.0225
+        }
+      },
+      "関西圏": {
+        "20-24": {
+          "japanese": 0.9565,
+          "foreign": 0.0435
+        },
+        "25-29": {
+          "japanese": 0.949,
+          "foreign": 0.051
+        },
+        "30-34": {
+          "japanese": 0.9588,
+          "foreign": 0.0412
+        },
+        "35-39": {
+          "japanese": 0.9687,
+          "foreign": 0.0313
+        },
+        "40-44": {
+          "japanese": 0.9765,
+          "foreign": 0.0235
+        },
+        "45-49": {
+          "japanese": 0.9814,
+          "foreign": 0.0186
+        }
+      }
+    };
+
+    // 出典: 厚労省 令和4年(2022年) 賃金構造基本統計調査・対数正規分布σ=0.5校正
+    const INCOME_DISTRIBUTION = {
+      "male": {
+        "\u5168\u56fd": {
+          "20-24": {
+            "200\u4e07+": 76.74,
+            "300\u4e07+": 46.79,
+            "400\u4e07+": 25.59,
+            "500\u4e07+": 13.52,
+            "600\u4e07+": 7.12,
+            "700\u4e07+": 3.79,
+            "800\u4e07+": 2.06,
+            "1000\u4e07+": 0.64,
+            "1200\u4e07+": 0.22,
+            "1500\u4e07+": 0.05
+          },
+          "25-29": {
+            "200\u4e07+": 87.14,
+            "300\u4e07+": 62.64,
+            "400\u4e07+": 40.01,
+            "500\u4e07+": 24.22,
+            "600\u4e07+": 14.37,
+            "700\u4e07+": 8.5,
+            "800\u4e07+": 5.06,
+            "1000\u4e07+": 1.85,
+            "1200\u4e07+": 0.71,
+            "1500\u4e07+": 0.19
+          },
+          "30-34": {
+            "200\u4e07+": 91.89,
+            "300\u4e07+": 72.13,
+            "400\u4e07+": 50.45,
+            "500\u4e07+": 33.18,
+            "600\u4e07+": 21.2,
+            "700\u4e07+": 13.39,
+            "800\u4e07+": 8.46,
+            "1000\u4e07+": 3.43,
+            "1200\u4e07+": 1.44,
+            "1500\u4e07+": 0.42
+          },
+          "35-39": {
+            "200\u4e07+": 94.47,
+            "300\u4e07+": 78.35,
+            "400\u4e07+": 58.27,
+            "500\u4e07+": 40.62,
+            "600\u4e07+": 27.36,
+            "700\u4e07+": 18.13,
+            "800\u4e07+": 11.95,
+            "1000\u4e07+": 5.22,
+            "1200\u4e07+": 2.34,
+            "1500\u4e07+": 0.75
+          },
+          "40-44": {
+            "200\u4e07+": 95.96,
+            "300\u4e07+": 82.51,
+            "400\u4e07+": 64.05,
+            "500\u4e07+": 46.55,
+            "600\u4e07+": 32.59,
+            "700\u4e07+": 22.38,
+            "800\u4e07+": 15.23,
+            "1000\u4e07+": 7.04,
+            "1200\u4e07+": 3.31,
+            "1500\u4e07+": 1.12
+          },
+          "45-49": {
+            "200\u4e07+": 96.95,
+            "300\u4e07+": 85.61,
+            "400\u4e07+": 68.71,
+            "500\u4e07+": 51.65,
+            "600\u4e07+": 37.32,
+            "700\u4e07+": 26.38,
+            "800\u4e07+": 18.44,
+            "1000\u4e07+": 8.93,
+            "1200\u4e07+": 4.37,
+            "1500\u4e07+": 1.55
+          }
+        },
+        "\u6771\u4eac\u90fd\u5185": {
+          "20-24": {
+            "200\u4e07+": 83.27,
+            "300\u4e07+": 56.11,
+            "400\u4e07+": 33.67,
+            "500\u4e07+": 19.28,
+            "600\u4e07+": 10.89,
+            "700\u4e07+": 6.17,
+            "800\u4e07+": 3.53,
+            "1000\u4e07+": 1.21,
+            "1200\u4e07+": 0.44,
+            "1500\u4e07+": 0.11
+          },
+          "25-29": {
+            "200\u4e07+": 92.99,
+            "300\u4e07+": 74.66,
+            "400\u4e07+": 53.52,
+            "500\u4e07+": 36.02,
+            "600\u4e07+": 23.5,
+            "700\u4e07+": 15.13,
+            "800\u4e07+": 9.72,
+            "1000\u4e07+": 4.06,
+            "1200\u4e07+": 1.75,
+            "1500\u4e07+": 0.53
+          },
+          "30-34": {
+            "200\u4e07+": 96.96,
+            "300\u4e07+": 85.62,
+            "400\u4e07+": 68.73,
+            "500\u4e07+": 51.67,
+            "600\u4e07+": 37.35,
+            "700\u4e07+": 26.4,
+            "800\u4e07+": 18.46,
+            "1000\u4e07+": 8.94,
+            "1200\u4e07+": 4.37,
+            "1500\u4e07+": 1.56
+          },
+          "35-39": {
+            "200\u4e07+": 98.55,
+            "300\u4e07+": 91.49,
+            "400\u4e07+": 78.71,
+            "500\u4e07+": 63.69,
+            "600\u4e07+": 49.42,
+            "700\u4e07+": 37.34,
+            "800\u4e07+": 27.76,
+            "1000\u4e07+": 15.0,
+            "1200\u4e07+": 8.06,
+            "1500\u4e07+": 3.24
+          },
+          "40-44": {
+            "200\u4e07+": 98.97,
+            "300\u4e07+": 93.35,
+            "400\u4e07+": 82.31,
+            "500\u4e07+": 68.47,
+            "600\u4e07+": 54.63,
+            "700\u4e07+": 42.39,
+            "800\u4e07+": 32.31,
+            "1000\u4e07+": 18.26,
+            "1200\u4e07+": 10.2,
+            "1500\u4e07+": 4.31
+          },
+          "45-49": {
+            "200\u4e07+": 99.22,
+            "300\u4e07+": 94.58,
+            "400\u4e07+": 84.85,
+            "500\u4e07+": 72.03,
+            "600\u4e07+": 58.67,
+            "700\u4e07+": 46.45,
+            "800\u4e07+": 36.08,
+            "1000\u4e07+": 21.11,
+            "1200\u4e07+": 12.16,
+            "1500\u4e07+": 5.33
+          }
+        },
+        "\u9996\u90fd\u570f": {
+          "20-24": {
+            "200\u4e07+": 80.62,
+            "300\u4e07+": 52.11,
+            "400\u4e07+": 30.07,
+            "500\u4e07+": 16.63,
+            "600\u4e07+": 9.12,
+            "700\u4e07+": 5.03,
+            "800\u4e07+": 2.81,
+            "1000\u4e07+": 0.93,
+            "1200\u4e07+": 0.33,
+            "1500\u4e07+": 0.08
+          },
+          "25-29": {
+            "200\u4e07+": 91.39,
+            "300\u4e07+": 71.02,
+            "400\u4e07+": 49.15,
+            "500\u4e07+": 32.0,
+            "600\u4e07+": 20.26,
+            "700\u4e07+": 12.7,
+            "800\u4e07+": 7.96,
+            "1000\u4e07+": 3.19,
+            "1200\u4e07+": 1.33,
+            "1500\u4e07+": 0.39
+          },
+          "30-34": {
+            "200\u4e07+": 94.97,
+            "300\u4e07+": 79.71,
+            "400\u4e07+": 60.1,
+            "500\u4e07+": 42.46,
+            "600\u4e07+": 28.95,
+            "700\u4e07+": 19.4,
+            "800\u4e07+": 12.92,
+            "1000\u4e07+": 5.75,
+            "1200\u4e07+": 2.61,
+            "1500\u4e07+": 0.85
+          },
+          "35-39": {
+            "200\u4e07+": 97.33,
+            "300\u4e07+": 86.87,
+            "400\u4e07+": 70.71,
+            "500\u4e07+": 53.93,
+            "600\u4e07+": 39.52,
+            "700\u4e07+": 28.29,
+            "800\u4e07+": 20.01,
+            "1000\u4e07+": 9.9,
+            "1200\u4e07+": 4.93,
+            "1500\u4e07+": 1.79
+          },
+          "40-44": {
+            "200\u4e07+": 98.03,
+            "300\u4e07+": 89.43,
+            "400\u4e07+": 75.0,
+            "500\u4e07+": 59.03,
+            "600\u4e07+": 44.58,
+            "700\u4e07+": 32.83,
+            "800\u4e07+": 23.83,
+            "1000\u4e07+": 12.34,
+            "1200\u4e07+": 6.39,
+            "1500\u4e07+": 2.45
+          },
+          "45-49": {
+            "200\u4e07+": 98.39,
+            "300\u4e07+": 90.86,
+            "400\u4e07+": 77.54,
+            "500\u4e07+": 62.19,
+            "600\u4e07+": 47.84,
+            "700\u4e07+": 35.85,
+            "800\u4e07+": 26.45,
+            "1000\u4e07+": 14.1,
+            "1200\u4e07+": 7.49,
+            "1500\u4e07+": 2.96
+          }
+        },
+        "\u95a2\u897f\u570f": {
+          "20-24": {
+            "200\u4e07+": 77.74,
+            "300\u4e07+": 48.11,
+            "400\u4e07+": 26.67,
+            "500\u4e07+": 14.25,
+            "600\u4e07+": 7.58,
+            "700\u4e07+": 4.08,
+            "800\u4e07+": 2.23,
+            "1000\u4e07+": 0.7,
+            "1200\u4e07+": 0.24,
+            "1500\u4e07+": 0.05
+          },
+          "25-29": {
+            "200\u4e07+": 89.89,
+            "300\u4e07+": 67.89,
+            "400\u4e07+": 45.59,
+            "500\u4e07+": 28.88,
+            "600\u4e07+": 17.84,
+            "700\u4e07+": 10.94,
+            "800\u4e07+": 6.72,
+            "1000\u4e07+": 2.6,
+            "1200\u4e07+": 1.05,
+            "1500\u4e07+": 0.29
+          },
+          "30-34": {
+            "200\u4e07+": 94.23,
+            "300\u4e07+": 77.75,
+            "400\u4e07+": 57.47,
+            "500\u4e07+": 39.82,
+            "600\u4e07+": 26.68,
+            "700\u4e07+": 17.6,
+            "800\u4e07+": 11.55,
+            "1000\u4e07+": 5.01,
+            "1200\u4e07+": 2.23,
+            "1500\u4e07+": 0.7
+          },
+          "35-39": {
+            "200\u4e07+": 96.67,
+            "300\u4e07+": 84.69,
+            "400\u4e07+": 67.29,
+            "500\u4e07+": 50.07,
+            "600\u4e07+": 35.83,
+            "700\u4e07+": 25.1,
+            "800\u4e07+": 17.4,
+            "1000\u4e07+": 8.31,
+            "1200\u4e07+": 4.01,
+            "1500\u4e07+": 1.41
+          },
+          "40-44": {
+            "200\u4e07+": 97.27,
+            "300\u4e07+": 86.69,
+            "400\u4e07+": 70.41,
+            "500\u4e07+": 53.59,
+            "600\u4e07+": 39.18,
+            "700\u4e07+": 28.0,
+            "800\u4e07+": 19.77,
+            "1000\u4e07+": 9.74,
+            "1200\u4e07+": 4.84,
+            "1500\u4e07+": 1.75
+          },
+          "45-49": {
+            "200\u4e07+": 98.18,
+            "300\u4e07+": 89.99,
+            "400\u4e07+": 75.98,
+            "500\u4e07+": 60.23,
+            "600\u4e07+": 45.8,
+            "700\u4e07+": 33.96,
+            "800\u4e07+": 24.8,
+            "1000\u4e07+": 12.99,
+            "1200\u4e07+": 6.79,
+            "1500\u4e07+": 2.63
+          }
+        }
+      },
+      "female": {
+        "\u5168\u56fd": {
+          "20-24": {
+            "200\u4e07+": 70.93,
+            "300\u4e07+": 39.76,
+            "400\u4e07+": 20.19,
+            "500\u4e07+": 10.01,
+            "600\u4e07+": 4.99,
+            "700\u4e07+": 2.53,
+            "800\u4e07+": 1.32,
+            "1000\u4e07+": 0.38,
+            "1200\u4e07+": 0.12,
+            "1500\u4e07+": 0.03
+          },
+          "25-29": {
+            "200\u4e07+": 80.03,
+            "300\u4e07+": 51.27,
+            "400\u4e07+": 29.34,
+            "500\u4e07+": 16.11,
+            "600\u4e07+": 8.78,
+            "700\u4e07+": 4.82,
+            "800\u4e07+": 2.68,
+            "1000\u4e07+": 0.87,
+            "1200\u4e07+": 0.31,
+            "1500\u4e07+": 0.07
+          },
+          "30-34": {
+            "200\u4e07+": 80.78,
+            "300\u4e07+": 52.35,
+            "400\u4e07+": 30.28,
+            "500\u4e07+": 16.79,
+            "600\u4e07+": 9.22,
+            "700\u4e07+": 5.1,
+            "800\u4e07+": 2.85,
+            "1000\u4e07+": 0.94,
+            "1200\u4e07+": 0.33,
+            "1500\u4e07+": 0.08
+          },
+          "35-39": {
+            "200\u4e07+": 83.54,
+            "300\u4e07+": 56.54,
+            "400\u4e07+": 34.07,
+            "500\u4e07+": 19.58,
+            "600\u4e07+": 11.09,
+            "700\u4e07+": 6.3,
+            "800\u4e07+": 3.62,
+            "1000\u4e07+": 1.24,
+            "1200\u4e07+": 0.46,
+            "1500\u4e07+": 0.11
+          },
+          "40-44": {
+            "200\u4e07+": 85.43,
+            "300\u4e07+": 59.65,
+            "400\u4e07+": 37.02,
+            "500\u4e07+": 21.84,
+            "600\u4e07+": 12.67,
+            "700\u4e07+": 7.35,
+            "800\u4e07+": 4.29,
+            "1000\u4e07+": 1.52,
+            "1200\u4e07+": 0.57,
+            "1500\u4e07+": 0.15
+          },
+          "45-49": {
+            "200\u4e07+": 86.77,
+            "300\u4e07+": 61.96,
+            "400\u4e07+": 39.33,
+            "500\u4e07+": 23.67,
+            "600\u4e07+": 13.97,
+            "700\u4e07+": 8.23,
+            "800\u4e07+": 4.87,
+            "1000\u4e07+": 1.77,
+            "1200\u4e07+": 0.68,
+            "1500\u4e07+": 0.18
+          }
+        },
+        "\u6771\u4eac\u90fd\u5185": {
+          "20-24": {
+            "200\u4e07+": 78.27,
+            "300\u4e07+": 48.83,
+            "400\u4e07+": 27.27,
+            "500\u4e07+": 14.66,
+            "600\u4e07+": 7.84,
+            "700\u4e07+": 4.24,
+            "800\u4e07+": 2.32,
+            "1000\u4e07+": 0.74,
+            "1200\u4e07+": 0.25,
+            "1500\u4e07+": 0.06
+          },
+          "25-29": {
+            "200\u4e07+": 88.3,
+            "300\u4e07+": 64.77,
+            "400\u4e07+": 42.22,
+            "500\u4e07+": 26.02,
+            "600\u4e07+": 15.69,
+            "700\u4e07+": 9.42,
+            "800\u4e07+": 5.67,
+            "1000\u4e07+": 2.12,
+            "1200\u4e07+": 0.83,
+            "1500\u4e07+": 0.23
+          },
+          "30-34": {
+            "200\u4e07+": 92.74,
+            "300\u4e07+": 74.09,
+            "400\u4e07+": 52.82,
+            "500\u4e07+": 35.36,
+            "600\u4e07+": 22.96,
+            "700\u4e07+": 14.72,
+            "800\u4e07+": 9.41,
+            "1000\u4e07+": 3.9,
+            "1200\u4e07+": 1.67,
+            "1500\u4e07+": 0.5
+          },
+          "35-39": {
+            "200\u4e07+": 94.88,
+            "300\u4e07+": 79.45,
+            "400\u4e07+": 59.75,
+            "500\u4e07+": 42.1,
+            "600\u4e07+": 28.63,
+            "700\u4e07+": 19.15,
+            "800\u4e07+": 12.73,
+            "1000\u4e07+": 5.64,
+            "1200\u4e07+": 2.56,
+            "1500\u4e07+": 0.83
+          },
+          "40-44": {
+            "200\u4e07+": 95.93,
+            "300\u4e07+": 82.41,
+            "400\u4e07+": 63.9,
+            "500\u4e07+": 46.4,
+            "600\u4e07+": 32.45,
+            "700\u4e07+": 22.26,
+            "800\u4e07+": 15.14,
+            "1000\u4e07+": 6.99,
+            "1200\u4e07+": 3.28,
+            "1500\u4e07+": 1.11
+          },
+          "45-49": {
+            "200\u4e07+": 96.16,
+            "300\u4e07+": 83.1,
+            "400\u4e07+": 64.91,
+            "500\u4e07+": 47.47,
+            "600\u4e07+": 33.43,
+            "700\u4e07+": 23.07,
+            "800\u4e07+": 15.78,
+            "1000\u4e07+": 7.36,
+            "1200\u4e07+": 3.48,
+            "1500\u4e07+": 1.19
+          }
+        },
+        "\u9996\u90fd\u570f": {
+          "20-24": {
+            "200\u4e07+": 76.43,
+            "300\u4e07+": 46.39,
+            "400\u4e07+": 25.27,
+            "500\u4e07+": 13.3,
+            "600\u4e07+": 6.98,
+            "700\u4e07+": 3.71,
+            "800\u4e07+": 2.01,
+            "1000\u4e07+": 0.62,
+            "1200\u4e07+": 0.21,
+            "1500\u4e07+": 0.05
+          },
+          "25-29": {
+            "200\u4e07+": 85.93,
+            "300\u4e07+": 60.5,
+            "400\u4e07+": 37.86,
+            "500\u4e07+": 22.5,
+            "600\u4e07+": 13.13,
+            "700\u4e07+": 7.66,
+            "800\u4e07+": 4.5,
+            "1000\u4e07+": 1.61,
+            "1200\u4e07+": 0.61,
+            "1500\u4e07+": 0.16
+          },
+          "30-34": {
+            "200\u4e07+": 88.69,
+            "300\u4e07+": 65.52,
+            "400\u4e07+": 43.02,
+            "500\u4e07+": 26.69,
+            "600\u4e07+": 16.19,
+            "700\u4e07+": 9.76,
+            "800\u4e07+": 5.91,
+            "1000\u4e07+": 2.23,
+            "1200\u4e07+": 0.88,
+            "1500\u4e07+": 0.24
+          },
+          "35-39": {
+            "200\u4e07+": 90.9,
+            "300\u4e07+": 69.98,
+            "400\u4e07+": 47.95,
+            "500\u4e07+": 30.93,
+            "600\u4e07+": 19.42,
+            "700\u4e07+": 12.09,
+            "800\u4e07+": 7.52,
+            "1000\u4e07+": 2.98,
+            "1200\u4e07+": 1.23,
+            "1500\u4e07+": 0.35
+          },
+          "40-44": {
+            "200\u4e07+": 91.22,
+            "300\u4e07+": 70.66,
+            "400\u4e07+": 48.73,
+            "500\u4e07+": 31.62,
+            "600\u4e07+": 19.97,
+            "700\u4e07+": 12.48,
+            "800\u4e07+": 7.81,
+            "1000\u4e07+": 3.11,
+            "1200\u4e07+": 1.29,
+            "1500\u4e07+": 0.37
+          },
+          "45-49": {
+            "200\u4e07+": 92.05,
+            "300\u4e07+": 72.5,
+            "400\u4e07+": 50.89,
+            "500\u4e07+": 33.58,
+            "600\u4e07+": 21.52,
+            "700\u4e07+": 13.63,
+            "800\u4e07+": 8.63,
+            "1000\u4e07+": 3.51,
+            "1200\u4e07+": 1.48,
+            "1500\u4e07+": 0.44
+          }
+        },
+        "\u95a2\u897f\u570f": {
+          "20-24": {
+            "200\u4e07+": 76.67,
+            "300\u4e07+": 46.69,
+            "400\u4e07+": 25.52,
+            "500\u4e07+": 13.47,
+            "600\u4e07+": 7.09,
+            "700\u4e07+": 3.77,
+            "800\u4e07+": 2.04,
+            "1000\u4e07+": 0.64,
+            "1200\u4e07+": 0.21,
+            "1500\u4e07+": 0.05
+          },
+          "25-29": {
+            "200\u4e07+": 84.99,
+            "300\u4e07+": 58.9,
+            "400\u4e07+": 36.3,
+            "500\u4e07+": 21.28,
+            "600\u4e07+": 12.27,
+            "700\u4e07+": 7.08,
+            "800\u4e07+": 4.12,
+            "1000\u4e07+": 1.45,
+            "1200\u4e07+": 0.54,
+            "1500\u4e07+": 0.14
+          },
+          "30-34": {
+            "200\u4e07+": 86.32,
+            "300\u4e07+": 61.18,
+            "400\u4e07+": 38.53,
+            "500\u4e07+": 23.03,
+            "600\u4e07+": 13.51,
+            "700\u4e07+": 7.92,
+            "800\u4e07+": 4.67,
+            "1000\u4e07+": 1.68,
+            "1200\u4e07+": 0.64,
+            "1500\u4e07+": 0.17
+          },
+          "35-39": {
+            "200\u4e07+": 87.97,
+            "300\u4e07+": 64.15,
+            "400\u4e07+": 41.57,
+            "500\u4e07+": 25.49,
+            "600\u4e07+": 15.29,
+            "700\u4e07+": 9.14,
+            "800\u4e07+": 5.49,
+            "1000\u4e07+": 2.04,
+            "1200\u4e07+": 0.8,
+            "1500\u4e07+": 0.21
+          },
+          "40-44": {
+            "200\u4e07+": 89.13,
+            "300\u4e07+": 66.36,
+            "400\u4e07+": 43.92,
+            "500\u4e07+": 27.45,
+            "600\u4e07+": 16.76,
+            "700\u4e07+": 10.17,
+            "800\u4e07+": 6.19,
+            "1000\u4e07+": 2.35,
+            "1200\u4e07+": 0.94,
+            "1500\u4e07+": 0.26
+          },
+          "45-49": {
+            "200\u4e07+": 90.81,
+            "300\u4e07+": 69.78,
+            "400\u4e07+": 47.72,
+            "500\u4e07+": 30.73,
+            "600\u4e07+": 19.26,
+            "700\u4e07+": 11.97,
+            "800\u4e07+": 7.44,
+            "1000\u4e07+": 2.94,
+            "1200\u4e07+": 1.21,
+            "1500\u4e07+": 0.35
+          }
+        }
+      }
+    };
+
+    // 出典: e-stat 全国家計構造調査(2019) 単身世帯65歳未満 純金融資産（貯蓄−負債）
+    const ASSET_CONDITIONAL_RATES = {
+      byIncomeBracket: {
+        600: { 300: 74.9, 500: 52.9, 1000: 22.9, 3000: 2.1, 5000: 0.4 },
+        700: { 300: 93.7, 500: 82.3, 1000: 54.5, 3000: 12.0, 5000: 3.8 },
+        800: { 300: 93.7, 500: 82.3, 1000: 54.5, 3000: 12.0, 5000: 3.8 },
+        1000: { 300: 94.5, 500: 84.2, 1000: 57.5, 3000: 13.5, 5000: 4.4 },
+        1200: { 300: 99.0, 500: 95.0, 1000: 78.0, 3000: 35.0, 5000: 18.0 },
+        1500: { 300: 99.9, 500: 99.6, 1000: 96.7, 3000: 71.0, 5000: 48.1 }
+      },
+      enabledMinIncome: 600
+    };
+
+    // 出典: e-stat 0003440493 (2019年全国家計構造調査) 世帯主年齢階級×可処分所得×純金融資産
+    // 35-44歳ベースの ASSET_CONDITIONAL_RATES を基準(1.0)とし、各年齢階級の保有率比から導出
+    const ASSET_AGE_MULTIPLIER = {
+      20: 0.76, 25: 0.76, 30: 0.76,
+      35: 1.00, 40: 1.00,
+      45: 1.27
+    };
+
+    // 出典: 文科省 学校基本調査 + 各大学公表進学者数より推計
+    const EDUCATION_RATES = {
+      male: { university: 0.55, march: 0.22, sokeijouri: 0.08, kyutei: 0.04 },
+      female: { university: 0.55, march: 0.20, sokeijouri: 0.07, kyutei: 0.03 }
+    };
+
+    // 出典: 日本皮膚科学会 男性型脱毛症診療ガイドライン
+    const NON_BALDNESS_RATES_MALE = {
+      20: 0.88, 25: 0.86, 30: 0.83, 35: 0.80, 40: 0.75, 45: 0.70
+    };
+
+    // 出典: 厚労省 令和4年(2022年) 国民健康・栄養調査 (30-49歳)
+    const HEIGHT_RATES = {
+      male: { 160: 0.98, 165: 0.90, 168: 0.75, 170: 0.58, 173: 0.42, 175: 0.32, 178: 0.18, 180: 0.10 },
+      female: { 150: 0.98, 155: 0.82, 158: 0.63, 160: 0.52, 163: 0.30, 165: 0.22, 168: 0.08 }
+    };
+
+    // 厚生労働省 令和4年国民健康・栄養調査: 喫煙
+    const NONSMOKING_RATES = {
+      male: 0.73,
+      female: 0.92
+    };
+
+    const HEIGHT_OPTIONS = {
+      male: [
+        { value: "none", label: "こだわらない" },
+        { value: "160", label: "160cm以上" },
+        { value: "165", label: "165cm以上" },
+        { value: "168", label: "168cm以上" },
+        { value: "170", label: "170cm以上" },
+        { value: "173", label: "173cm以上" },
+        { value: "175", label: "175cm以上" },
+        { value: "178", label: "178cm以上" },
+        { value: "180", label: "180cm以上" }
+      ],
+      female: [
+        { value: "none", label: "こだわらない" },
+        { value: "150", label: "150cm以上" },
+        { value: "155", label: "155cm以上" },
+        { value: "158", label: "158cm以上" },
+        { value: "160", label: "160cm以上" },
+        { value: "163", label: "163cm以上" },
+        { value: "165", label: "165cm以上" },
+        { value: "168", label: "168cm以上" }
+      ]
+    };
+
+    const ASSET_OPTIONS = [
+      { value: "0", label: "こだわらない" },
+      { value: "300", label: "300万円以上" },
+      { value: "500", label: "500万円以上" },
+      { value: "1000", label: "1000万円以上" },
+      { value: "3000", label: "3000万円以上" },
+      { value: "5000", label: "5000万円以上" }
+    ];
+
+    const EDUCATION_OPTIONS = [
+      { value: "none", label: "こだわらない" },
+      { value: "university", label: "大卒以上" },
+      { value: "march", label: "MARCH・関関同立以上" },
+      { value: "sokeijouri", label: "早慶上理以上" },
+      { value: "kyutei", label: "旧帝・一橋・東工大以上" }
+    ];
+
+    const RESIDENCE_LABELS = {
+      nationwide: "全国",
+      metro: "首都圏",
+      kansai: "関西圏",
+      tokyo: "東京都内"
+    };
+
+    const RESIDENCE_INCOME_KEYS = {
+      nationwide: "全国",
+      metro: "首都圏",
+      kansai: "関西圏",
+      tokyo: "東京都内"
+    };
+
+    const AGE_INCOME_KEYS = {
+      20: "20-24",
+      25: "25-29",
+      30: "30-34",
+      35: "35-39",
+      40: "40-44",
+      45: "45-49"
+    };
+
+    const BALDNESS_LABELS = {
+      any: "こだわらない",
+      nonbald: "薄毛でない"
+    };
+
+    const NATIONALITY_LABELS = {
+      any: "こだわらない",
+      japanese: "日本国籍のみ",
+      foreign: "外国籍のみ"
+    };
+
+    const EDUCATION_LABELS = {
+      none: "こだわらない",
+      university: "大卒以上",
+      march: "MARCH・関関同立以上",
+      sokeijouri: "早慶上理以上",
+      kyutei: "旧帝・一橋・東工大以上"
+    };
+
+    const GENDER_LABELS = {
+      male: "男性",
+      female: "女性"
+    };
+
+    const FOOTER_TEXT =
+      "総務省 令和2年(2020年)国勢調査 配偶関係・国籍 / 厚生労働省 賃金構造基本統計調査 / e-stat 全国家計構造調査(2019)・対数正規σ=0.85校正・年齢補正(0003440493) / 文科省 学校基本調査 + 大学公表値 / 厚生労働省 国民健康・栄養調査 / 日本皮膚科学会 AGAガイドライン / ※フェルミ推計のため実際の人数とは異なります";
+
+    const els = {
+      controls: document.getElementById("controls"),
+      ageMin: document.getElementById("ageMin"),
+      ageMax: document.getElementById("ageMax"),
+      m_unmarried: document.getElementById("m_unmarried"),
+      m_divorced: document.getElementById("m_divorced"),
+      m_widowed: document.getElementById("m_widowed"),
+      income: document.getElementById("income"),
+      education: document.getElementById("education"),
+      residence: document.getElementById("residence"),
+      nationality: document.getElementById("nationality"),
+      height: document.getElementById("height"),
+      smoking: document.getElementById("smoking"),
+      assetField: document.getElementById("assetField"),
+      asset: document.getElementById("asset"),
+      baldnessField: document.getElementById("baldnessField"),
+      baldness: document.getElementById("baldness"),
+      targetLabel: document.getElementById("targetLabel"),
+      targetSubtext: document.getElementById("targetSubtext"),
+      rangeBadge: document.getElementById("rangeBadge"),
+      summaryText: document.getElementById("summaryText"),
+      countValue: document.getElementById("countValue"),
+      overallRateValue: document.getElementById("overallRateValue"),
+      ageBandRateValue: document.getElementById("ageBandRateValue"),
+      rarityComment: document.getElementById("rarityComment"),
+      encounterFeel: document.getElementById("encounterFeel"),
+      breakdown: document.getElementById("breakdown"),
+      ageDetails: document.getElementById("ageDetails"),
+      dataLimitations: document.getElementById("dataLimitations")
+    };
+
+    const footer = document.querySelector("footer");
+    if (footer) {
+      footer.textContent = FOOTER_TEXT;
+    }
+
+    function populateSelect(select, options) {
+      select.innerHTML = options.map((option) => (
+        `<option value="${option.value}">${option.label}</option>`
+      )).join("");
+    }
+
+    function setupControls() {
+      const ageOptions = AGE_BUCKETS.map((bucket) => ({
+        value: String(bucket.key),
+        label: bucket.label
+      }));
+
+      populateSelect(els.ageMin, ageOptions);
+      populateSelect(els.ageMax, ageOptions);
+      populateSelect(els.income, INCOME_OPTIONS);
+      populateSelect(els.education, EDUCATION_OPTIONS);
+      populateSelect(els.asset, ASSET_OPTIONS);
+
+      els.ageMin.value = String(AGE_BUCKETS[0].key);
+      els.ageMax.value = String(AGE_BUCKETS[AGE_BUCKETS.length - 1].key);
+      els.income.value = "0";
+      els.education.value = "none";
+      els.nationality.value = "any";
+      els.asset.value = "0";
+      els.baldness.value = "any";
+    }
+
+    function getSelectedMaritalOptions() {
+      return {
+        unmarried: els.m_unmarried.checked,
+        divorced: els.m_divorced.checked,
+        widowed: els.m_widowed.checked
+      };
+    }
+
+    function getMaritalSelectionLabel(maritalSelection) {
+      const labels = [];
+      if (maritalSelection.unmarried) labels.push("未婚");
+      if (maritalSelection.divorced) labels.push("離別");
+      if (maritalSelection.widowed) labels.push("死別");
+      return labels.join("＋");
+    }
+
+    function getSelfGender() {
+      return document.querySelector('input[name="selfGender"]:checked').value;
+    }
+
+    function getTargetGender() {
+      return getSelfGender() === "female" ? "male" : "female";
+    }
+
+    function updateHeightOptions(targetGender) {
+      const previous = els.height.value;
+      populateSelect(els.height, HEIGHT_OPTIONS[targetGender]);
+      els.height.value = HEIGHT_OPTIONS[targetGender].some((option) => option.value === previous)
+        ? previous
+        : "none";
+    }
+
+    function syncAssetAvailability() {
+      els.asset.disabled = Number(els.income.value) < ASSET_CONDITIONAL_RATES.enabledMinIncome;
+    }
+
+    function formatPeople(value) {
+      const rounded = Math.max(0, Math.round(value));
+      return `約${rounded.toLocaleString("ja-JP")}人`;
+    }
+
+    function formatPercent(value) {
+      if (value === 0) {
+        return "0%";
+      }
+      if (value >= 10) {
+        return `${value.toFixed(1)}%`;
+      }
+      if (value >= 1) {
+        return `${value.toFixed(2)}%`;
+      }
+      if (value >= 0.1) {
+        return `${value.toFixed(3)}%`;
+      }
+      return `${value.toFixed(4)}%`;
+    }
+
+    function formatEncounterNumber(value) {
+      if (value >= 10) {
+        return `${Math.round(value).toLocaleString("ja-JP")} 人`;
+      }
+      if (value >= 1) {
+        return `${value.toFixed(1)} 人`;
+      }
+      if (value >= 0.1) {
+        return `${value.toFixed(2)} 人`;
+      }
+      return `${value.toFixed(3)} 人`;
+    }
+
+    function buildEncounterFeel(ageBandRate, targetGenderLabel) {
+      const rate = ageBandRate / 100;
+      if (rate === 0) {
+        return `条件に該当する${targetGenderLabel}は見つかりませんでした。`;
+      }
+
+      const scenarios = [
+        { context: "婚活パーティで 100 人と会えば", sampleSize: 100 },
+        { context: "マッチングアプリで月 100 人スワイプすれば", sampleSize: 100 },
+        { context: "同年代の街角を 1,000 人すれ違えば", sampleSize: 1000 }
+      ];
+
+      const lines = scenarios.map(({ context, sampleSize }) => (
+        `・${context} 約 ${formatEncounterNumber(rate * sampleSize)}`
+      ));
+
+      if (rate < 0.01) {
+        lines.push(`・希少度: 約 ${Math.round(1 / rate).toLocaleString("ja-JP")} 人に1人`);
+      }
+
+      return lines.join("\n");
+    }
+
+    function getIncomeRateByAge(gender, residenceKey, ageKey, threshold) {
+      if (threshold === 0) {
+        return 1;
+      }
+
+      const residenceData = INCOME_DISTRIBUTION[gender]?.[RESIDENCE_INCOME_KEYS[residenceKey]];
+      const ageData = residenceData?.[AGE_INCOME_KEYS[ageKey]];
+      return (ageData?.[`${threshold}万+`] ?? 0) / 100;
+    }
+
+    function getAssetRate(incomeThreshold, assetThreshold, ageKey = 35) {
+      if (assetThreshold === 0) {
+        return 1;
+      }
+      if (incomeThreshold < ASSET_CONDITIONAL_RATES.enabledMinIncome) {
+        return 1;
+      }
+
+      const bracket = ASSET_CONDITIONAL_RATES.byIncomeBracket[incomeThreshold]
+        ?? ASSET_CONDITIONAL_RATES.byIncomeBracket[600];
+      const baseRate = (bracket?.[assetThreshold] ?? 0) / 100;
+      const multiplier = ASSET_AGE_MULTIPLIER[ageKey] ?? 1;
+      return Math.min(1, Math.max(0, baseRate * multiplier));
+    }
+
+    function getBaldnessRate(targetGender, ageKey, baldnessSelected) {
+      if (baldnessSelected === "any" || targetGender !== "male") {
+        return 1;
+      }
+      return NON_BALDNESS_RATES_MALE[ageKey] ?? 1;
+    }
+
+    function getEducationRate(gender, level) {
+      if (level === "none") {
+        return 1;
+      }
+      return EDUCATION_RATES[gender]?.[level] ?? 0;
+    }
+
+    function getHeightRate(gender, threshold) {
+      if (threshold === "none") {
+        return 1;
+      }
+      return HEIGHT_RATES[gender]?.[Number(threshold)] ?? 0;
+    }
+
+    function getSmokingRate(gender, smokingValue) {
+      if (smokingValue === "any") {
+        return 1;
+      }
+      return NONSMOKING_RATES[gender];
+    }
+
+    function getMaritalPool(targetGender, residenceLabel, ageLabel, maritalSelection) {
+      const cell = MARITAL_DISTRIBUTION[targetGender][residenceLabel][ageLabel];
+      let total = 0;
+      if (maritalSelection.unmarried) total += cell.unmarried;
+      if (maritalSelection.divorced) total += cell.divorced;
+      if (maritalSelection.widowed) total += cell.widowed;
+      return total;
+    }
+
+    function getNationalityRate(residenceLabel, ageLabel, choice) {
+      if (choice === "any") {
+        return 1;
+      }
+      const cell = NATIONALITY_RATES[residenceLabel][ageLabel];
+      return choice === "japanese" ? cell.japanese : cell.foreign;
+    }
+
+    function getRarityLabel(ratePercent) {
+      if (ratePercent >= 50) return "条件はゆるめ";
+      if (ratePercent >= 20) return "標準的";
+      if (ratePercent >= 5) return "やや高め";
+      if (ratePercent >= 1) return "かなりの好条件";
+      if (ratePercent >= 0.1) return "希少種";
+      if (ratePercent >= 0.01) return "絶滅危惧種";
+      return "天然記念物";
+    }
+
+    function getSelectedBuckets() {
+      let minIndex = AGE_BUCKETS.findIndex((bucket) => bucket.key === Number(els.ageMin.value));
+      let maxIndex = AGE_BUCKETS.findIndex((bucket) => bucket.key === Number(els.ageMax.value));
+
+      if (minIndex > maxIndex) {
+        [minIndex, maxIndex] = [maxIndex, minIndex];
+        els.ageMin.value = String(AGE_BUCKETS[minIndex].key);
+        els.ageMax.value = String(AGE_BUCKETS[maxIndex].key);
+      }
+
+      return AGE_BUCKETS.slice(minIndex, maxIndex + 1);
+    }
+
+    function sumBy(items, key) {
+      return items.reduce((sum, item) => sum + item[key], 0);
+    }
+
+    function findOptionLabel(options, value) {
+      return options.find((option) => option.value === String(value))?.label ?? "こだわらない";
+    }
+
+    function handleMaritalCheckboxChange(event) {
+      const selectedCount = [
+        els.m_unmarried,
+        els.m_divorced,
+        els.m_widowed
+      ].filter((checkbox) => checkbox.checked).length;
+
+      if (selectedCount === 0) {
+        event.target.checked = true;
+      }
+    }
+
+    function computeEstimate() {
+      const targetGender = getTargetGender();
+      const selectedBuckets = getSelectedBuckets();
+      const residenceKey = els.residence.value;
+      const residenceLabel = RESIDENCE_LABELS[residenceKey];
+      const nationalityChoice = els.nationality.value;
+      const maritalSelection = getSelectedMaritalOptions();
+      const maritalLabel = getMaritalSelectionLabel(maritalSelection);
+      const incomeThreshold = Number(els.income.value);
+      const assetThreshold = Number(els.asset.value);
+      const educationLevel = els.education.value;
+      const heightThreshold = els.height.value;
+      const smokingPref = els.smoking.value;
+      const baldnessPref = els.baldness.value;
+
+      const baseTotal = AGE_BUCKETS.reduce(
+        (sum, bucket) => sum + getMaritalPool(targetGender, "全国", AGE_INCOME_KEYS[bucket.key], maritalSelection),
+        0
+      );
+      const agePool = selectedBuckets.reduce(
+        (sum, bucket) => sum + getMaritalPool(targetGender, residenceLabel, AGE_INCOME_KEYS[bucket.key], maritalSelection),
+        0
+      );
+
+      const perAgeResults = selectedBuckets.map((bucket) => {
+        const ageLabel = AGE_INCOME_KEYS[bucket.key];
+        const nationalityRate = getNationalityRate(residenceLabel, ageLabel, nationalityChoice);
+        const incomeRate = getIncomeRateByAge(targetGender, residenceKey, bucket.key, incomeThreshold);
+        const assetRate = getAssetRate(incomeThreshold, assetThreshold, bucket.key);
+        const educationRate = getEducationRate(targetGender, educationLevel);
+        const heightRate = getHeightRate(targetGender, heightThreshold);
+        const smokingRate = getSmokingRate(targetGender, smokingPref);
+        const baldnessRate = getBaldnessRate(targetGender, bucket.key, baldnessPref);
+
+        const n0 = getMaritalPool(targetGender, residenceLabel, ageLabel, maritalSelection);
+        const nNat = n0 * nationalityRate;
+        const nInc = nNat * incomeRate;
+        const nAsset = nInc * assetRate;
+        const nEdu = nAsset * educationRate;
+        const nHeight = nEdu * heightRate;
+        const nSmoke = nHeight * smokingRate;
+        const nBald = nSmoke * baldnessRate;
+
+        return {
+          ageKey: bucket.key,
+          ageLabel: bucket.label,
+          n0,
+          nNat,
+          nInc,
+          nAsset,
+          nEdu,
+          nHeight,
+          nSmoke,
+          nBald,
+          nationalityRate,
+          incomeRate,
+          assetRate,
+          educationRate,
+          heightRate,
+          smokingRate,
+          baldnessRate
+        };
+      });
+
+      const afterNationality = sumBy(perAgeResults, "nNat");
+      const afterIncome = sumBy(perAgeResults, "nInc");
+      const afterAsset = sumBy(perAgeResults, "nAsset");
+      const afterEducation = sumBy(perAgeResults, "nEdu");
+      const afterHeight = sumBy(perAgeResults, "nHeight");
+      const afterSmoking = sumBy(perAgeResults, "nSmoke");
+      const finalCount = sumBy(perAgeResults, "nBald");
+      const overallRate = baseTotal === 0 ? 0 : (finalCount / baseTotal) * 100;
+      const ageBandRate = agePool === 0 ? 0 : (finalCount / agePool) * 100;
+
+      return {
+        targetGender,
+        selectedBuckets,
+        perAgeResults,
+        baseTotal,
+        agePool,
+        finalCount,
+        overallRate,
+        ageBandRate,
+        rarity: getRarityLabel(overallRate),
+        residenceLabel,
+        maritalLabel,
+        nationalityChoice,
+        breakdown: [
+          {
+            label: "母数（年齢×居住地×婚姻状態）",
+            selection: `${selectedBuckets[0].label}〜${selectedBuckets[selectedBuckets.length - 1].label} / ${residenceLabel} / ${maritalLabel}`,
+            rate: baseTotal === 0 ? 0 : agePool / baseTotal,
+            remaining: agePool,
+            note: "国勢調査2020ベース"
+          },
+          {
+            label: "国籍",
+            selection: NATIONALITY_LABELS[nationalityChoice],
+            rate: agePool === 0 ? 0 : afterNationality / agePool,
+            remaining: afterNationality,
+            note: nationalityChoice === "any" ? "条件なし" : "居住地×年齢別割合"
+          },
+          {
+            label: "年収（地域内分布）",
+            selection: findOptionLabel(INCOME_OPTIONS, incomeThreshold),
+            rate: afterNationality === 0 ? 0 : afterIncome / afterNationality,
+            remaining: afterIncome,
+            note: incomeThreshold === 0 ? "条件なし" : "年齢×地域×性別"
+          },
+          {
+            label: "資産（年収条件付き）",
+            selection: findOptionLabel(ASSET_OPTIONS, assetThreshold),
+            rate: afterIncome === 0 ? 0 : afterAsset / afterIncome,
+            remaining: afterAsset,
+            note: assetThreshold === 0
+              ? "条件なし"
+              : incomeThreshold < ASSET_CONDITIONAL_RATES.enabledMinIncome
+                ? "年収600万円未満では未適用"
+                : "年収条件を満たす層に適用"
+          },
+          {
+            label: "学歴",
+            selection: EDUCATION_LABELS[educationLevel],
+            rate: afterAsset === 0 ? 0 : afterEducation / afterAsset,
+            remaining: afterEducation,
+            note: educationLevel === "none" ? "条件なし" : "推定比率"
+          },
+          {
+            label: "身長",
+            selection: findOptionLabel(HEIGHT_OPTIONS[targetGender], heightThreshold),
+            rate: afterEducation === 0 ? 0 : afterHeight / afterEducation,
+            remaining: afterHeight,
+            note: heightThreshold === "none" ? "条件なし" : "性別別分布"
+          },
+          {
+            label: "喫煙",
+            selection: smokingPref === "nonsmoker" ? "非喫煙者" : "こだわらない",
+            rate: afterHeight === 0 ? 0 : afterSmoking / afterHeight,
+            remaining: afterSmoking,
+            note: smokingPref === "any" ? "条件なし" : "非喫煙率"
+          },
+          {
+            label: "薄毛",
+            selection: BALDNESS_LABELS[baldnessPref],
+            rate: afterSmoking === 0 ? 0 : finalCount / afterSmoking,
+            remaining: finalCount,
+            note: targetGender !== "male" || baldnessPref === "any" ? "条件なし" : "年代別非AGA率"
+          }
+        ]
+      };
+    }
+
+    function render() {
+      const result = computeEstimate();
+      const selfGender = getSelfGender();
+      const targetGenderLabel = GENDER_LABELS[result.targetGender];
+      const ageStart = result.selectedBuckets[0].label;
+      const ageEnd = result.selectedBuckets[result.selectedBuckets.length - 1].label;
+
+      els.targetLabel.textContent = `${targetGenderLabel}の候補母集団`;
+      els.targetSubtext.textContent = `${selfGender === "female" ? "女性" : "男性"}として条件を設定中です。婚姻状態と国籍も反映します。`;
+      els.rangeBadge.textContent = `${ageStart}〜${ageEnd}`;
+      els.summaryText.textContent =
+        `${targetGenderLabel}の${result.maritalLabel}候補全体約${Math.round(result.baseTotal).toLocaleString("ja-JP")}人のうち、` +
+        `${result.residenceLabel}・${ageStart}〜${ageEnd}で条件を掛け合わせると ${formatPeople(result.finalCount)} と推計されます。`;
+      els.countValue.textContent = formatPeople(result.finalCount);
+      els.overallRateValue.textContent = formatPercent(result.overallRate);
+      els.ageBandRateValue.textContent = formatPercent(result.ageBandRate);
+      els.rarityComment.textContent = `${result.rarity}（年齢帯内 ${formatPercent(result.ageBandRate)}）`;
+      els.encounterFeel.textContent = buildEncounterFeel(result.ageBandRate, targetGenderLabel);
+
+      els.breakdown.innerHTML = result.breakdown.map((item) => `
+        <article class="breakdown-item">
+          <div>
+            <strong>${item.label}</strong>
+            <span>${item.selection}</span>
+          </div>
+          <div class="value-block">
+            <small>通過率</small>
+            <strong>${formatPercent(item.rate * 100)}</strong>
+          </div>
+          <div class="value-block">
+            <small>残る人数</small>
+            <strong>${formatPeople(item.remaining)}</strong>
+          </div>
+          <p class="breakdown-note">${item.note}</p>
+        </article>
+      `).join("");
+
+      els.ageDetails.innerHTML = `
+        <table class="age-table">
+          <thead>
+            <tr>
+              <th>5歳階級</th>
+              <th>母数</th>
+              <th>国籍</th>
+              <th>年収</th>
+              <th>資産</th>
+              <th>学歴</th>
+              <th>身長</th>
+              <th>喫煙</th>
+              <th>薄毛</th>
+              <th>推定人数</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${result.perAgeResults.map((item) => `
+              <tr>
+                <td>${item.ageLabel}</td>
+                <td>${formatPeople(item.n0)}</td>
+                <td>${formatPercent(item.nationalityRate * 100)}</td>
+                <td>${formatPercent(item.incomeRate * 100)}</td>
+                <td>${formatPercent(item.assetRate * 100)}</td>
+                <td>${formatPercent(item.educationRate * 100)}</td>
+                <td>${formatPercent(item.heightRate * 100)}</td>
+                <td>${formatPercent(item.smokingRate * 100)}</td>
+                <td>${formatPercent(item.baldnessRate * 100)}</td>
+                <td>${formatPeople(item.nBald)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+
+      els.dataLimitations.textContent =
+        "婚姻状態・国籍は令和2年(2020年)国勢調査ベース、年収は年齢×地域×性別の分布、資産は年収条件付きの単身世帯65歳未満データに世帯主年齢別補正係数（35歳未満=0.76, 35-44=1.00, 45-54=1.27 / e-stat 0003440493より）を乗算。学歴・身長・喫煙・AGAは独立仮定の簡略推計なので、実際の出会い可能人数とはずれます。";
+    }
+
+    function handleGenderChange() {
+      const targetGender = getTargetGender();
+      updateHeightOptions(targetGender);
+      els.baldnessField.hidden = targetGender !== "male";
+      if (targetGender !== "male") {
+        els.baldness.value = "any";
+      }
+      render();
+    }
+
+    function handleControlsChange(event) {
+      if (event.target.name === "selfGender") {
+        handleGenderChange();
+        return;
+      }
+
+      if (event.target.id === "m_unmarried" || event.target.id === "m_divorced" || event.target.id === "m_widowed") {
+        handleMaritalCheckboxChange(event);
+      }
+
+      if (event.target.id === "income") {
+        syncAssetAvailability();
+      }
+
+      render();
+    }
+
+    setupControls();
+    updateHeightOptions(getTargetGender());
+    syncAssetAvailability();
+    handleGenderChange();
+    els.controls.addEventListener("change", handleControlsChange);
+  </script>
+</body>
+</html>

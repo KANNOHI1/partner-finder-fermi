@@ -1,0 +1,12 @@
+.DS_Store
+Thumbs.db
+*.log
+node_modules/
+.vscode/
+.idea/
+.playwright-mcp/
+*.png
+*.jpg
+*.jpeg
+.env
+.env.local
