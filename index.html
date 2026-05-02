@@ -509,6 +509,31 @@
 
       .breakdown-item {
         grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .breakdown-item .value-block {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+        text-align: left;
+      }
+
+      .breakdown-item .value-block small,
+      .breakdown-item .value-block strong,
+      .breakdown-item .value-block span {
+        display: inline;
+        white-space: nowrap;
+      }
+
+      .breakdown-item .value-block small {
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+
+      .breakdown-item .value-block strong {
+        font-size: 0.95rem;
       }
 
       .duo-with-sep {
