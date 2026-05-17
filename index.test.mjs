@@ -89,6 +89,7 @@ globalThis.__testExports = {
   AGE_BUCKETS,
   MARITAL_DISTRIBUTION,
   NATIONALITY_RATES,
+  INCOME_DISTRIBUTION,
   ASSET_CONDITIONAL_RATES,
   EDUCATION_RATES,
   NON_BALDNESS_RATES_MALE,
@@ -279,6 +280,95 @@ test("getAssetRate decreases for younger ages", () => {
   assert.ok(rate35 < rate45, `35-39歳資産率(${rate35}) < 45-49歳(${rate45}) であるべき`);
   // 既存の2引数呼び出しは35-44ベース(係数1.0)で動くこと
   approxEqual(app.exports.getAssetRate(1000, 1000), 0.575);
+});
+
+test("source includes hokkaido and sapporo residence options", () => {
+  assert.match(html, /<option value="hokkaido">北海道<\/option>/);
+  assert.match(html, /<option value="sapporo">札幌市<\/option>/);
+});
+
+test("computeEstimate supports hokkaido and sapporo residences", () => {
+  const app = loadApp();
+  setSelfGender(app, "female");
+  app.elements.ageMin.value = "30";
+  app.elements.ageMax.value = "30";
+  app.elements.nationality.value = "any";
+  app.elements.m_unmarried.checked = true;
+  app.elements.m_divorced.checked = false;
+  app.elements.m_widowed.checked = false;
+  app.elements.income.value = "500";
+  app.elements.asset.value = "0";
+  app.elements.education.value = "none";
+  app.elements.height.value = "none";
+  app.elements.smoking.value = "any";
+  app.elements.baldness.value = "any";
+
+  for (const residence of ["hokkaido", "sapporo"]) {
+    app.elements.residence.value = residence;
+    const result = app.exports.computeEstimate();
+    assert.ok(result.finalCount > 0, `${residence} should return a positive estimate`);
+    assert.ok(Number.isFinite(result.finalCount), `${residence} should return a finite estimate`);
+  }
+});
+
+test("regional overlap counts remain monotonic for nested areas", () => {
+  const app = loadApp();
+  setSelfGender(app, "female");
+  app.elements.ageMin.value = "30";
+  app.elements.ageMax.value = "30";
+  app.elements.nationality.value = "any";
+  app.elements.m_unmarried.checked = true;
+  app.elements.m_divorced.checked = false;
+  app.elements.m_widowed.checked = false;
+  app.elements.income.value = "500";
+  app.elements.asset.value = "0";
+  app.elements.education.value = "none";
+  app.elements.height.value = "none";
+  app.elements.smoking.value = "any";
+  app.elements.baldness.value = "any";
+
+  app.elements.residence.value = "hokkaido";
+  const hokkaido = app.exports.computeEstimate();
+  app.elements.residence.value = "sapporo";
+  const sapporo = app.exports.computeEstimate();
+  app.elements.residence.value = "metro";
+  const metro = app.exports.computeEstimate();
+  app.elements.residence.value = "tokyo";
+  const tokyo = app.exports.computeEstimate();
+
+  assert.ok(hokkaido.finalCount > sapporo.finalCount, "北海道 should be larger than 札幌市");
+  assert.ok(metro.finalCount > tokyo.finalCount, "首都圏 should be larger than 東京都内");
+});
+
+test("income threshold rates are monotonic for every gender region and age", () => {
+  const app = loadApp();
+  const thresholds = ["200万+", "300万+", "400万+", "500万+", "600万+", "700万+", "800万+", "1000万+"];
+
+  for (const [gender, regions] of Object.entries(app.exports.INCOME_DISTRIBUTION)) {
+    for (const [region, ages] of Object.entries(regions)) {
+      for (const [age, values] of Object.entries(ages)) {
+        for (let i = 1; i < thresholds.length; i += 1) {
+          const previous = values[thresholds[i - 1]];
+          const current = values[thresholds[i]];
+          assert.ok(
+            previous >= current,
+            `${gender}/${region}/${age} should be monotonic at ${thresholds[i]}`
+          );
+        }
+      }
+    }
+  }
+});
+
+test("distribution JSON files match HTML constants", () => {
+  const app = loadApp();
+  const income = JSON.parse(fs.readFileSync(new URL("./income_distribution.json", import.meta.url), "utf8"));
+  const marital = JSON.parse(fs.readFileSync(new URL("./marital_distribution.json", import.meta.url), "utf8"));
+  const nationality = JSON.parse(fs.readFileSync(new URL("./nationality_distribution.json", import.meta.url), "utf8"));
+
+  assert.deepEqual(income, JSON.parse(JSON.stringify(app.exports.INCOME_DISTRIBUTION)));
+  assert.deepEqual(marital, JSON.parse(JSON.stringify(app.exports.MARITAL_DISTRIBUTION)));
+  assert.deepEqual(nationality, JSON.parse(JSON.stringify(app.exports.NATIONALITY_RATES)));
 });
 
 let failed = 0;

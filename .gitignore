@@ -10,3 +10,13 @@ node_modules/
 *.jpeg
 .env
 .env.local
+
+# personal memory (HK)
+memory
+
+# 作業中の下書き・中間ファイル
+_*.json
+_*.md
+
+# エディタ設定
+*.code-workspace
