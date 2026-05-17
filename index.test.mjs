@@ -106,6 +106,7 @@ globalThis.__testExports = {
   getMaritalPool: globalThis.getMaritalPool ?? getMaritalPool,
   getNationalityRate: globalThis.getNationalityRate ?? getNationalityRate,
   getSmokingRate: globalThis.getSmokingRate ?? getSmokingRate,
+  buildEncounterFeel: globalThis.buildEncounterFeel ?? buildEncounterFeel,
   handleGenderChange: globalThis.handleGenderChange ?? handleGenderChange,
   handleMaritalCheckboxChange: globalThis.handleMaritalCheckboxChange ?? handleMaritalCheckboxChange,
   render: globalThis.render ?? render,
@@ -244,7 +245,36 @@ test("render outputs encounter feel card with party scenario text", () => {
   const app = loadApp();
   app.exports.render();
 
-  assert.match(app.elements.encounterFeel.textContent, /婚活パーティで 100 人/);
+  assert.match(app.elements.encounterFeel.textContent, /1人と出会うために必要な数の目安:/);
+  assert.match(app.elements.encounterFeel.textContent, /石を投げれば当たる/);
+
+  const normalText = app.exports.buildEncounterFeel(5, "男性");
+  assert.match(normalText, /1人と出会うために必要な数の目安:/);
+  assert.match(normalText, /婚活パーティ（1回20人）に 約 \d+ 回参加/);
+  assert.match(normalText, /マッチングアプリで 約 \d+ 人にいいね/);
+});
+
+test("buildEncounterFeel outputs hard mode text for extremely rare rates", () => {
+  const app = loadApp();
+  const doctorText = app.exports.buildEncounterFeel(0.5, "男性", 1200);
+  const lawyerText = app.exports.buildEncounterFeel(0.05, "男性", 120);
+  const proBaseballText = app.exports.buildEncounterFeel(0.005, "男性", 12);
+  const olympicText = app.exports.buildEncounterFeel(0.0005, "男性", 12);
+
+  assert.match(doctorText, /医師レベルの希少さ/);
+  assert.match(lawyerText, /弁護士より珍しい/);
+  assert.match(proBaseballText, /プロ野球選手より珍しい/);
+  assert.match(olympicText, /オリンピック日本代表より珍しい超希少/);
+  assert.match(olympicText, /全国でも 約 12 人/);
+});
+
+test("buildEncounterFeel outputs easy mode text for common rates", () => {
+  const app = loadApp();
+  const text = app.exports.buildEncounterFeel(90, "男性");
+
+  assert.match(text, /1人と出会うために必要な数の目安:/);
+  assert.match(text, /石を投げれば当たる/);
+  assert.match(text, /パーティ20人中 \d+ 人が候補/);
 });
 
 test("getMaritalPool sums selected categories", () => {

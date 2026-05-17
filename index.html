@@ -2421,24 +2421,49 @@
       return `${value.toFixed(3)} 人`;
     }
 
-    function buildEncounterFeel(ageBandRate, targetGenderLabel) {
+    function buildEncounterFeel(ageBandRate, targetGenderLabel, finalCount = 0) {
       const rate = ageBandRate / 100;
       if (rate === 0) {
         return `条件に該当する${targetGenderLabel}は見つかりませんでした。`;
       }
 
-      const scenarios = [
-        { context: "婚活パーティで 100 人と会えば", sampleSize: 100 },
-        { context: "マッチングアプリで月 100 人スワイプすれば", sampleSize: 100 },
-        { context: "同年代の街角を 1,000 人すれ違えば", sampleSize: 1000 }
+      const neededPeople = 1 / rate;
+      const partyVisits = Math.max(1, Math.ceil(neededPeople / 20));
+      const appLikes = Math.max(1, Math.round(neededPeople));
+      const consultationMonths = Math.max(1, Math.ceil(neededPeople / 3));
+      const consultationLabel = consultationMonths >= 12
+        ? (() => {
+          const years = Math.floor(consultationMonths / 12);
+          const remainingMonths = consultationMonths % 12;
+          return remainingMonths === 0
+            ? `約 ${years.toLocaleString("ja-JP")} 年`
+            : `約 ${years.toLocaleString("ja-JP")} 年 ${remainingMonths.toLocaleString("ja-JP")} ヶ月`;
+        })()
+        : `約 ${consultationMonths.toLocaleString("ja-JP")} ヶ月`;
+
+      const lines = [
+        "1人と出会うために必要な数の目安:",
+        `・婚活パーティ（1回20人）に 約 ${partyVisits.toLocaleString("ja-JP")} 回参加`,
+        `・マッチングアプリで 約 ${appLikes.toLocaleString("ja-JP")} 人にいいね`,
+        `・結婚相談所（月3人紹介）で ${consultationLabel}`
       ];
 
-      const lines = scenarios.map(({ context, sampleSize }) => (
-        `・${context} 約 ${formatEncounterNumber(rate * sampleSize)}`
-      ));
-
-      if (rate < 0.01) {
-        lines.push(`・希少度: 約 ${Math.round(1 / rate).toLocaleString("ja-JP")} 人に1人`);
+      if (rate > 0.8) {
+        const partyCandidates = Math.round(rate * 20);
+        lines.push(`🌟 石を投げれば当たるレベル（パーティ20人中 ${partyCandidates.toLocaleString("ja-JP")} 人が候補）`);
+      } else if (rate > 0.1) {
+        // 10%超から80%以下は追加コメントなし
+      } else if (rate > 0.01) {
+        lines.push(`※ 約 ${Math.round(neededPeople).toLocaleString("ja-JP")} 人に 1 人の希少さ`);
+      } else if (rate > 0.001) {
+        lines.push(`※ 約 ${Math.round(neededPeople).toLocaleString("ja-JP")} 人に 1 人（医師レベルの希少さ）`);
+      } else if (rate > 0.0001) {
+        lines.push(`※ 約 ${Math.round(neededPeople).toLocaleString("ja-JP")} 人に 1 人（弁護士より珍しい）`);
+      } else if (rate > 0.00001) {
+        lines.push(`⚠ 約 ${Math.round(neededPeople).toLocaleString("ja-JP")} 人に 1 人（プロ野球選手より珍しい）`);
+      } else {
+        const nationwideCount = Math.max(1, Math.round(finalCount));
+        lines.push(`⚠ オリンピック日本代表より珍しい超希少（全国でも 約 ${nationwideCount.toLocaleString("ja-JP")} 人）`);
       }
 
       return lines.join("\n");
@@ -2726,7 +2751,7 @@
       els.overallRateValue.textContent = formatPercent(result.overallRate);
       els.ageBandRateValue.textContent = formatPercent(result.ageBandRate);
       els.rarityComment.textContent = `${result.rarity}（年齢帯内 ${formatPercent(result.ageBandRate)}）`;
-      els.encounterFeel.textContent = buildEncounterFeel(result.ageBandRate, targetGenderLabel);
+      els.encounterFeel.textContent = buildEncounterFeel(result.ageBandRate, targetGenderLabel, result.finalCount);
 
       els.breakdown.innerHTML = result.breakdown.map((item) => `
         <article class="breakdown-item">
