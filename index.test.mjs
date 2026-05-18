@@ -252,20 +252,20 @@ test("render outputs encounter feel card with party scenario text", () => {
   assert.match(normalText, /1人と出会うために必要な数の目安:/);
   assert.match(normalText, /婚活パーティ（1回20人）に 約 \d+ 回参加/);
   assert.match(normalText, /マッチングアプリで 約 \d+ 人にいいね/);
+  assert.match(normalText, /相手側の意向も加味した目安/);
 });
 
 test("buildEncounterFeel outputs hard mode text for extremely rare rates", () => {
   const app = loadApp();
-  const doctorText = app.exports.buildEncounterFeel(0.5, "男性", 1200);
-  const lawyerText = app.exports.buildEncounterFeel(0.05, "男性", 120);
-  const proBaseballText = app.exports.buildEncounterFeel(0.005, "男性", 12);
-  const olympicText = app.exports.buildEncounterFeel(0.0005, "男性", 12);
+  const schoolText = app.exports.buildEncounterFeel(0.5, "男性");
+  const concertText = app.exports.buildEncounterFeel(0.05, "男性");
+  const domeText = app.exports.buildEncounterFeel(0.005, "男性");
+  const cityText = app.exports.buildEncounterFeel(0.0005, "男性");
 
-  assert.match(doctorText, /医師レベルの希少さ/);
-  assert.match(lawyerText, /弁護士より珍しい/);
-  assert.match(proBaseballText, /プロ野球選手より珍しい/);
-  assert.match(olympicText, /オリンピック日本代表より珍しい超希少/);
-  assert.match(olympicText, /全国でも 約 12 人/);
+  assert.match(schoolText, /学校1校（500人）に 約 \d+ 人/);
+  assert.match(concertText, /コンサート会場（5,000人）に 約 \d+ 人/);
+  assert.match(domeText, /東京ドーム満員（5万人）に 約 \d+ 人/);
+  assert.match(cityText, /中規模都市（30万人）にも 約 \d+ 人しかいない超希少/);
 });
 
 test("buildEncounterFeel outputs easy mode text for common rates", () => {
@@ -275,6 +275,18 @@ test("buildEncounterFeel outputs easy mode text for common rates", () => {
   assert.match(text, /1人と出会うために必要な数の目安:/);
   assert.match(text, /石を投げれば当たる/);
   assert.match(text, /パーティ20人中 \d+ 人が候補/);
+});
+
+test("buildEncounterFeel applies mutual-intent rates to scene estimates", () => {
+  const app = loadApp();
+  const maleTargetText = app.exports.buildEncounterFeel(2.85, "男性");
+  const femaleTargetText = app.exports.buildEncounterFeel(2.85, "女性");
+
+  assert.match(maleTargetText, /婚活パーティ（1回20人）に 約 6 回参加/);
+  assert.match(maleTargetText, /マッチングアプリで 約 175 人にいいね/);
+  assert.match(maleTargetText, /結婚相談所（月3人紹介）で 約 2 年 10 ヶ月/);
+  assert.match(maleTargetText, /電車1両（150人）に 約 4 人/);
+  assert.match(femaleTargetText, /マッチングアプリで 約 351 人にいいね/);
 });
 
 test("getMaritalPool sums selected categories", () => {

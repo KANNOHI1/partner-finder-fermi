@@ -2428,9 +2428,15 @@
       }
 
       const neededPeople = 1 / rate;
-      const partyVisits = Math.max(1, Math.ceil(neededPeople / 20));
-      const appLikes = Math.max(1, Math.round(neededPeople));
-      const consultationMonths = Math.max(1, Math.ceil(neededPeople / 3));
+      const partyPassRate = 0.35;
+      const appMutualRate = targetGenderLabel === "男性" ? 0.20 : 0.10;
+      const consultationPassRate = 0.35;
+      const neededParty = 1 / (rate * partyPassRate);
+      const neededApp = 1 / (rate * appMutualRate);
+      const neededConsultation = 1 / (rate * consultationPassRate);
+      const partyVisits = Math.max(1, Math.ceil(neededParty / 20));
+      const appLikes = Math.max(1, Math.round(neededApp));
+      const consultationMonths = Math.max(1, Math.ceil(neededConsultation / 3));
       const consultationLabel = consultationMonths >= 12
         ? (() => {
           const years = Math.floor(consultationMonths / 12);
@@ -2445,7 +2451,8 @@
         "1人と出会うために必要な数の目安:",
         `・婚活パーティ（1回20人）に 約 ${partyVisits.toLocaleString("ja-JP")} 回参加`,
         `・マッチングアプリで 約 ${appLikes.toLocaleString("ja-JP")} 人にいいね`,
-        `・結婚相談所（月3人紹介）で ${consultationLabel}`
+        `・結婚相談所（月3人紹介）で ${consultationLabel}`,
+        "※ 数値は相手側の意向も加味した目安（パーティ35% / アプリ男10%・女20% / 相談所35%が相互合意に至ると仮定）"
       ];
 
       if (rate > 0.8) {
@@ -2454,16 +2461,20 @@
       } else if (rate > 0.1) {
         // 10%超から80%以下は追加コメントなし
       } else if (rate > 0.01) {
-        lines.push(`※ 約 ${Math.round(neededPeople).toLocaleString("ja-JP")} 人に 1 人の希少さ`);
+        const trainCandidates = Math.max(1, Math.round(rate * 150));
+        lines.push(`※ 約 ${Math.round(neededPeople).toLocaleString("ja-JP")} 人に 1 人（電車1両（150人）に 約 ${trainCandidates.toLocaleString("ja-JP")} 人）`);
       } else if (rate > 0.001) {
-        lines.push(`※ 約 ${Math.round(neededPeople).toLocaleString("ja-JP")} 人に 1 人（医師レベルの希少さ）`);
+        const schoolCandidates = Math.max(1, Math.round(rate * 500));
+        lines.push(`※ 約 ${Math.round(neededPeople).toLocaleString("ja-JP")} 人に 1 人（学校1校（500人）に 約 ${schoolCandidates.toLocaleString("ja-JP")} 人）`);
       } else if (rate > 0.0001) {
-        lines.push(`※ 約 ${Math.round(neededPeople).toLocaleString("ja-JP")} 人に 1 人（弁護士より珍しい）`);
+        const concertCandidates = Math.max(1, Math.round(rate * 5000));
+        lines.push(`※ 約 ${Math.round(neededPeople).toLocaleString("ja-JP")} 人に 1 人（コンサート会場（5,000人）に 約 ${concertCandidates.toLocaleString("ja-JP")} 人）`);
       } else if (rate > 0.00001) {
-        lines.push(`⚠ 約 ${Math.round(neededPeople).toLocaleString("ja-JP")} 人に 1 人（プロ野球選手より珍しい）`);
+        const domeCandidates = Math.max(1, Math.round(rate * 50000));
+        lines.push(`※ 約 ${Math.round(neededPeople).toLocaleString("ja-JP")} 人に 1 人（東京ドーム満員（5万人）に 約 ${domeCandidates.toLocaleString("ja-JP")} 人）`);
       } else {
-        const nationwideCount = Math.max(1, Math.round(finalCount));
-        lines.push(`⚠ オリンピック日本代表より珍しい超希少（全国でも 約 ${nationwideCount.toLocaleString("ja-JP")} 人）`);
+        const cityCandidates = Math.max(1, Math.round(rate * 300000));
+        lines.push(`⚠ 約 ${Math.round(neededPeople).toLocaleString("ja-JP")} 人に 1 人（中規模都市（30万人）にも 約 ${cityCandidates.toLocaleString("ja-JP")} 人しかいない超希少）`);
       }
 
       return lines.join("\n");
